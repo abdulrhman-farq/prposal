@@ -1,0 +1,1480 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>العرض المالي — جمع بيانات نقاط الاهتمام</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1B33;
+    --ink-2:#1F3559;
+    --muted:#5C6B83;
+    --line:#D7DBE3;
+    --line-soft:#ECEEF3;
+    --paper:#FFFFFF;
+    --paper-2:#F7F6F2;
+    --gold:#9C7A3C;
+    --gold-soft:#E9DFCB;
+    --accent:#0F3A6B;
+    --danger:#8A2E2E;
+    --good:#26563C;
+    --page-w: 210mm;
+    --page-h: 297mm;
+    --pad-x: 22mm;
+    --pad-y: 20mm;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+    color:var(--ink);
+    background:#E5E7EB;
+    font-size:11pt;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    font-feature-settings:"kern" 1, "liga" 1, "calt" 1;
+    /* Fix 1: disable dictionary hyphenation on Arabic */
+    hyphens: none;
+    -webkit-hyphens: none;
+    -ms-hyphens: none;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+  /* Fix 2: strong bidi isolation for all Latin/English inline tokens */
+  .latin{
+    font-family:"IBM Plex Sans", "IBM Plex Sans Arabic", sans-serif;
+    direction:ltr;
+    unicode-bidi:isolate;
+    display:inline-block;   /* keeps the LTR run self-contained in any viewer */
+    white-space:nowrap;     /* prevents identifiers from splitting at line-end */
+    vertical-align:baseline;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Page chrome ---------- */
+  .page{
+    width:var(--page-w);
+    min-height:var(--page-h);
+    padding:var(--pad-y) var(--pad-x);
+    margin:14mm auto;
+    background:var(--paper);
+    box-shadow:0 6px 24px rgba(15,30,60,.12);
+    position:relative;
+    overflow:hidden;
+    page-break-after:always;
+    display:flex;
+    flex-direction:column;
+  }
+  .page:last-child{ page-break-after:auto; }
+
+  .page-header{
+    position:absolute;
+    top:9mm; left:var(--pad-x); right:var(--pad-x);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:8.5pt; color:var(--muted);
+    border-bottom:1px solid var(--line-soft);
+    padding-bottom:5mm;
+    letter-spacing:.02em;
+  }
+  .page-header .doc-id{ font-family:"IBM Plex Sans", monospace; direction:ltr; }
+  .page-header .brand{ font-weight:600; color:var(--ink-2); }
+
+  .page-footer{
+    position:absolute;
+    bottom:8mm; left:var(--pad-x); right:var(--pad-x);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:8.5pt; color:var(--muted);
+    border-top:1px solid var(--line-soft);
+    padding-top:4mm;
+  }
+  .page-footer .confidential{
+    display:inline-flex; align-items:center; gap:6px;
+    color:var(--gold); font-weight:500;
+  }
+  .page-footer .confidential::before{
+    content:""; width:6px; height:6px; background:var(--gold); border-radius:50%;
+  }
+  .page-footer .pageno{ font-family:"IBM Plex Sans"; direction:ltr; letter-spacing:.05em; }
+
+  .page-body{
+    margin-top:14mm;
+    margin-bottom:12mm;
+    flex:1;
+  }
+
+  /* ---------- Typography ---------- */
+  h1, h2, h3, h4{ color:var(--ink); margin:0; font-weight:600; line-height:1.35; }
+  h1{ font-size:28pt; font-weight:700; letter-spacing:-.01em; }
+  h2.section-title{
+    font-size:18pt;
+    font-weight:600;
+    padding-bottom:8px;
+    margin-bottom:22px;
+    border-bottom:2px solid var(--ink);
+    display:flex; align-items:baseline; gap:14px;
+  }
+  h2.section-title .sec-num{
+    font-family:"IBM Plex Serif", serif;
+    font-weight:700;
+    color:var(--gold);
+    font-size:22pt;
+    direction:ltr;
+  }
+  h3{ font-size:13pt; margin:22px 0 10px; color:var(--ink-2); }
+  h4{ font-size:11pt; margin:14px 0 6px; color:var(--ink-2); font-weight:600; }
+  p{ margin:0 0 10px; }
+  ul{ margin:6px 0 12px; padding-inline-start:0; padding-inline-end:18px; }
+  ul li{ margin-bottom:6px; padding-inline-start:2px; }
+  ul li::marker{ color:var(--gold); }
+
+  .lead{ font-size:11.5pt; line-height:1.85; color:var(--ink-2); }
+  .eyebrow{
+    font-size:8.5pt; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--gold); font-weight:600; direction:ltr; display:inline-block;
+    font-family:"IBM Plex Sans";
+  }
+  .note{
+    background:var(--paper-2);
+    border-inline-start:3px solid var(--gold);
+    padding:12px 16px;
+    font-size:10pt;
+    color:var(--ink-2);
+    margin:14px 0;
+    border-radius:2px;
+  }
+
+  /* ---------- Tables ---------- */
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:10pt;
+    margin:10px 0 14px;
+  }
+  thead th{
+    background:var(--ink);
+    color:#fff;
+    text-align:right;
+    padding:10px 12px;
+    font-weight:500;
+    font-size:9.5pt;
+    letter-spacing:.01em;
+  }
+  thead th.center{ text-align:center; }
+  thead th.num-h{ text-align:left; direction:ltr; }
+  tbody td{
+    padding:9px 12px;
+    border-bottom:1px solid var(--line-soft);
+    vertical-align:top;
+  }
+  tbody tr:nth-child(even) td{ background:#FBFAF7; }
+  td.center{ text-align:center; }
+  td.num{ text-align:left; direction:ltr; font-family:"IBM Plex Sans"; font-variant-numeric: tabular-nums; }
+  td.label{ color:var(--muted); width:38%; }
+  tr.total td{
+    background:var(--paper-2) !important;
+    font-weight:600;
+    color:var(--ink);
+    border-top:1.5px solid var(--ink-2);
+    border-bottom:1.5px solid var(--ink-2);
+  }
+  tr.grand td{
+    background:var(--ink) !important;
+    color:#fff;
+    font-weight:600;
+    font-size:11pt;
+  }
+
+  /* ---------- Cover page ---------- */
+  .cover{
+    background:linear-gradient(180deg, #0B1B33 0%, #0F2A4A 60%, #143A66 100%);
+    color:#fff;
+    padding:0;
+    overflow:hidden;
+  }
+  .cover .page-header, .cover .page-footer{ display:none; }
+  .cover-grid{
+    display:grid;
+    grid-template-rows: 1fr auto;
+    height:var(--page-h);
+    padding:var(--pad-y) var(--pad-x);
+    position:relative;
+  }
+  .cover-watermark{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .cover-watermark::before{
+    content:""; position:absolute;
+    right:-120mm; top:-80mm;
+    width:300mm; height:300mm;
+    background:radial-gradient(circle, rgba(156,122,60,.18) 0%, rgba(156,122,60,0) 60%);
+  }
+  .cover-watermark::after{
+    content:""; position:absolute;
+    left:-80mm; bottom:-100mm;
+    width:280mm; height:280mm;
+    background:radial-gradient(circle, rgba(255,255,255,.06) 0%, rgba(255,255,255,0) 60%);
+  }
+  .cover-top{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    position:relative; z-index:1;
+  }
+  .cover-mark{
+    display:flex; align-items:center; gap:10px;
+    font-family:"IBM Plex Sans"; direction:ltr;
+  }
+  .cover-mark .dot{ width:10px; height:10px; background:var(--gold); border-radius:50%; }
+  .cover-mark .name{ font-weight:600; letter-spacing:.04em; color:#fff; }
+  .cover-mark .sub{ color:rgba(255,255,255,.7); font-size:9pt; margin-top:2px; }
+  .cover-ref{
+    direction:ltr; font-family:"IBM Plex Sans"; font-size:9pt;
+    color:rgba(255,255,255,.65); text-align:left; letter-spacing:.05em;
+  }
+
+  .cover-center{
+    position:relative; z-index:1;
+    align-self:center;
+    padding:40mm 0;
+  }
+  .cover-eyebrow{
+    color:var(--gold); letter-spacing:.3em; font-size:10pt;
+    font-family:"IBM Plex Sans"; direction:ltr;
+    margin-bottom:18px;
+  }
+  .cover h1{
+    color:#fff; font-size:46pt; font-weight:600; line-height:1.15;
+    margin-bottom:8px;
+  }
+  .cover .h1-en{
+    font-family:"IBM Plex Serif"; direction:ltr;
+    font-size:18pt; font-weight:500; color:rgba(255,255,255,.7);
+    letter-spacing:.02em; margin-bottom:34px;
+  }
+  .cover .project{
+    font-size:18pt; line-height:1.5; color:rgba(255,255,255,.92);
+    max-width:140mm; font-weight:400;
+  }
+  .cover .project .en{
+    display:block; direction:ltr; font-family:"IBM Plex Sans";
+    color:rgba(255,255,255,.6); font-size:13pt; margin-top:4px;
+  }
+  .cover-divider{ height:1px; background:rgba(255,255,255,.18); margin:32px 0; max-width:140mm; }
+  .cover-meta{
+    display:grid; grid-template-columns:repeat(2, 1fr);
+    gap:18px 40px; max-width:160mm;
+    font-size:10.5pt;
+  }
+  .cover-meta .k{ color:rgba(255,255,255,.55); font-size:9pt; letter-spacing:.05em; margin-bottom:2px; }
+  .cover-meta .v{ color:#fff; font-weight:500; }
+  .cover-meta .v.num{ direction:ltr; font-family:"IBM Plex Sans"; }
+
+  .cover-bottom{
+    position:relative; z-index:1;
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-top:1px solid rgba(255,255,255,.15);
+    padding-top:14px;
+    font-size:9pt;
+    color:rgba(255,255,255,.6);
+  }
+  .cover-bottom .conf{
+    color:var(--gold); letter-spacing:.2em; font-weight:500;
+    font-family:"IBM Plex Sans"; direction:ltr;
+  }
+
+  /* ---------- TOC ---------- */
+  .toc-list{ list-style:none; padding:0; margin:0; counter-reset:toc; }
+  .toc-list li{
+    display:flex; align-items:baseline; gap:14px;
+    padding:11px 0;
+    border-bottom:1px dashed var(--line);
+    font-size:11pt;
+  }
+  .toc-list li .n{
+    font-family:"IBM Plex Serif"; color:var(--gold); font-weight:700;
+    direction:ltr; width:26px; flex-shrink:0;
+  }
+  .toc-list li .t{ flex:1; color:var(--ink-2); }
+  .toc-list li .dots{ flex:1; border-bottom:1px dotted var(--line); transform:translateY(-4px); margin:0 4px; }
+  .toc-list li .p{
+    font-family:"IBM Plex Sans"; direction:ltr; color:var(--muted);
+    width:24px; text-align:left;
+  }
+
+  /* ---------- Summary block ---------- */
+  .summary-hero{
+    background:var(--paper-2);
+    border:1px solid var(--gold-soft);
+    padding:22px 26px;
+    margin:0 0 22px;
+    border-radius:2px;
+    display:grid;
+    grid-template-columns: 1fr auto;
+    gap:24px;
+    align-items:center;
+  }
+  .summary-hero .label{
+    font-size:9pt; letter-spacing:.18em; color:var(--gold); font-weight:600;
+    font-family:"IBM Plex Sans"; direction:ltr; text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .summary-hero .amount{
+    font-family:"IBM Plex Serif", serif;
+    direction:ltr;
+    font-size:32pt;
+    font-weight:600;
+    color:var(--ink);
+    line-height:1;
+    letter-spacing:-.01em;
+  }
+  .summary-hero .amount .ccy{ font-size:14pt; color:var(--gold); margin-inline-start:8px; font-family:"IBM Plex Sans"; }
+  .summary-hero .caption{ color:var(--muted); font-size:9.5pt; margin-top:6px; }
+  .summary-hero .right{ text-align:left; }
+  .summary-hero .pts{
+    font-family:"IBM Plex Serif"; direction:ltr;
+    font-size:22pt; font-weight:600; color:var(--ink-2);
+  }
+  .summary-hero .pts-l{ font-size:9pt; color:var(--muted); letter-spacing:.05em; }
+
+  /* KPI strip */
+  .kpi-row{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;
+    margin:16px 0 24px;
+  }
+  .kpi{
+    border:1px solid var(--line);
+    padding:14px 16px;
+    border-radius:2px;
+    background:#fff;
+  }
+  .kpi .l{ font-size:8.5pt; color:var(--muted); letter-spacing:.05em; }
+  .kpi .v{
+    font-family:"IBM Plex Serif"; direction:ltr;
+    font-size:18pt; font-weight:600; color:var(--ink);
+    margin-top:4px; line-height:1.1;
+  }
+  .kpi .v .u{ font-size:10pt; color:var(--muted); font-family:"IBM Plex Sans"; margin-inline-start:4px; }
+
+  /* Eval criteria grid */
+  .eval-grid{ display:grid; grid-template-columns:1fr; gap:0; border:1px solid var(--line); }
+  .eval-row{
+    display:grid; grid-template-columns: 60px 1.2fr 2fr;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .eval-row:last-child{ border-bottom:none; }
+  .eval-row > div{ padding:14px 16px; }
+  .eval-row .e-n{
+    background:var(--paper-2); color:var(--gold);
+    font-family:"IBM Plex Serif"; font-weight:700; font-size:16pt;
+    text-align:center; direction:ltr;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .eval-row .e-c{ background:#FBFAF7; border-inline-start:1px solid var(--line-soft); border-inline-end:1px solid var(--line-soft); }
+  .eval-row .e-c .lbl{ font-weight:600; color:var(--ink); }
+  .eval-row .e-c .en{ display:block; font-family:"IBM Plex Sans"; direction:ltr; color:var(--muted); font-size:8.5pt; letter-spacing:.04em; margin-top:2px; }
+  .eval-row .e-r{ font-size:10pt; color:var(--ink-2); }
+
+  /* Numbered list (acknowledgments) */
+  .num-list{ list-style:none; padding:0; counter-reset:nl; }
+  .num-list li{
+    display:flex; gap:14px; padding:10px 0;
+    border-bottom:1px solid var(--line-soft);
+    counter-increment:nl;
+  }
+  .num-list li:last-child{ border-bottom:none; }
+  .num-list li::before{
+    content: counter(nl, decimal);
+    flex-shrink:0;
+    width:28px; height:28px; line-height:28px;
+    background:var(--paper-2); color:var(--gold);
+    border:1px solid var(--gold-soft);
+    border-radius:50%; text-align:center;
+    font-family:"IBM Plex Sans"; direction:ltr;
+    font-size:9.5pt; font-weight:600;
+  }
+
+  /* Add-ons cards */
+  .addons{
+    display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; margin-top:10px;
+  }
+  .addon{
+    background:#fff; border:1px solid var(--line);
+    padding:14px 16px; display:flex; gap:14px; align-items:flex-start;
+  }
+  .addon .n{
+    flex-shrink:0; width:28px; height:28px; line-height:26px;
+    border:1.5px solid var(--gold); color:var(--gold);
+    font-family:"IBM Plex Sans"; direction:ltr; font-weight:600;
+    text-align:center; border-radius:50%; font-size:9.5pt;
+  }
+  .addon .b{ font-size:10pt; line-height:1.6; color:var(--ink-2); }
+
+  /* Signature */
+  .sig-block{
+    border:1.5px solid var(--ink);
+    padding:28px 30px;
+    background:#fff;
+    margin-top:20px;
+  }
+  .sig-block .grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:30px 50px;
+  }
+  .sig-block .field{
+    border-bottom:1px solid var(--line);
+    padding-bottom:8px;
+  }
+  .sig-block .field .l{ font-size:8.5pt; color:var(--muted); letter-spacing:.05em; margin-bottom:4px; }
+  .sig-block .field .v{ font-size:11.5pt; color:var(--ink); font-weight:500; }
+  .sig-block .field .v.num{ font-family:"IBM Plex Sans"; direction:ltr; }
+  .sig-line{
+    margin-top:24px; padding-top:22px; border-top:1px solid var(--line);
+    display:grid; grid-template-columns:1fr 1fr; gap:50px;
+  }
+  .sig-line .slot{
+    display:flex; flex-direction:column; gap:30px;
+  }
+  .sig-line .slot .line{ border-bottom:1.2px solid var(--ink); height:1px; }
+  .sig-line .slot .lbl{ color:var(--muted); font-size:9.5pt; }
+
+  /* Bilingual title helper */
+  .bili{ display:flex; align-items:baseline; gap:10px; }
+  .bili .ar{ }
+  .bili .en{ font-family:"IBM Plex Sans"; direction:ltr; color:var(--muted); font-size:.7em; font-weight:400; }
+
+  /* methodology cards */
+  .method-cards{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:14px 0; }
+  .method-card{
+    background:var(--paper-2); padding:16px 18px; border-radius:2px;
+    border-top:3px solid var(--gold);
+  }
+  .method-card .h{ font-weight:600; color:var(--ink); margin-bottom:6px; }
+  .method-card .v{ font-family:"IBM Plex Serif"; direction:ltr; font-size:20pt; color:var(--accent); font-weight:600; line-height:1.1; }
+  .method-card .v .u{ font-size:10pt; color:var(--muted); margin-inline-start:4px; }
+  .method-card .d{ font-size:9.5pt; color:var(--muted); margin-top:6px; }
+
+  /* Comparison bar */
+  .cmp{ margin:14px 0; }
+  .cmp-row{ display:grid; grid-template-columns: 220px 1fr 110px; gap:14px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line-soft); }
+  .cmp-row .lbl{ font-size:10pt; color:var(--ink-2); }
+  .cmp-row .bar{ height:14px; background:var(--line-soft); position:relative; border-radius:2px; overflow:hidden; }
+  .cmp-row .bar .fill{ position:absolute; top:0; right:0; bottom:0; background:var(--accent); }
+  .cmp-row .bar .fill.gold{ background:var(--gold); }
+  .cmp-row .val{ font-family:"IBM Plex Sans"; direction:ltr; text-align:left; font-weight:600; color:var(--ink); }
+
+  @page{ size:A4 portrait; margin:0; }
+  @media print{
+    *{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body{ background:#fff; }
+    .page{
+      margin:0 !important;
+      box-shadow:none !important;
+      page-break-after: always;
+      break-after: page;
+      overflow: visible !important;
+    }
+    .page:last-child{ page-break-after: auto; break-after: auto; }
+    tr{ break-inside: avoid; }
+    .note{ break-inside: avoid; }
+    .eval-row{ break-inside: avoid; }
+    .addon{ break-inside: avoid; }
+    .sig-block{ break-inside: avoid; }
+    body > section + section{ margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- =========================== COVER =========================== -->
+<section class="page cover" data-screen-label="01 Cover">
+  <div class="cover-watermark"></div>
+  <div class="cover-grid">
+
+    <div class="cover-top">
+      <div class="cover-mark">
+        <span class="dot"></span>
+        <div>
+          <div class="name">Farq Technology</div>
+          <div class="sub">مؤسسة فرق التقنية</div>
+        </div>
+      </div>
+      <div class="cover-ref">
+        REF&nbsp;·&nbsp;FP-NIC-POI-2026-001-R4<br>
+        REV&nbsp;·&nbsp;R4 — FINAL SUBMISSION
+      </div>
+    </div>
+
+    <div class="cover-center">
+      <div class="cover-eyebrow">FINANCIAL PROPOSAL · 2026</div>
+      <h1>العَرض المالي</h1>
+      <div class="h1-en">Financial Proposal</div>
+      <div class="project">
+        مشروع جمع بيانات نقاط الاهتمام (POI) لتطبيق السوبر آب
+        <span class="en">POI Data Collection for Super App — Naver Innovation Company</span>
+      </div>
+
+      <div class="cover-divider"></div>
+
+      <div class="cover-meta">
+        <div>
+          <div class="k">PREPARED FOR</div>
+          <div class="v">شركة نايفر للابتكار</div>
+        </div>
+        <div>
+          <div class="k">CONTRACT VALUE (incl. VAT)</div>
+          <div class="v num">SAR 6,780,000</div>
+        </div>
+        <div>
+          <div class="k">SUBMISSION DEADLINE</div>
+          <div class="v num">19 May 2026 · 12:00</div>
+        </div>
+        <div>
+          <div class="k">ISSUE DATE</div>
+          <div class="v num">14 May 2026</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cover-bottom">
+      <div class="conf">
+</div>
+      <div>17 pp · A4 · Arabic / العربية</div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== TOC =========================== -->
+<section class="page" data-screen-label="02 TOC">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">CONTENTS</div>
+    <h2 class="section-title" style="margin-top:6px; border-bottom-width:1.5px;">
+      <span class="sec-num">—</span> فهرس المحتويات
+    </h2>
+
+    <ol class="toc-list">
+      <li><span class="n">01</span><span class="t">الملخص التنفيذي المالي</span><span class="dots"></span><span class="p">03</span></li>
+      <li><span class="n">02</span><span class="t">الاستجابة لمعايير التقييم المالي</span><span class="dots"></span><span class="p">04</span></li>
+      <li><span class="n">03</span><span class="t">الإقرار بطبيعة المشروع متعدّد المورّدين</span><span class="dots"></span><span class="p">05</span></li>
+      <li><span class="n">04</span><span class="t">جدول الكميات والأسعار (BOQ&nbsp;v2) — تسعير متدرّج</span><span class="dots"></span><span class="p">06</span></li>
+      <li><span class="n">05</span><span class="t">منهجية التسعير</span><span class="dots"></span><span class="p">07</span></li>
+      <li><span class="n">06</span><span class="t">هيكل التكلفة الإجمالية</span><span class="dots"></span><span class="p">08</span></li>
+      <li><span class="n">07</span><span class="t">التكلفة حسب المدينة</span><span class="dots"></span><span class="p">09</span></li>
+      <li><span class="n">08</span><span class="t">جدول الدفعات</span><span class="dots"></span><span class="p">10</span></li>
+      <li><span class="n">09</span><span class="t">مقارنة الأسعار بين البنود</span><span class="dots"></span><span class="p">11</span></li>
+      <li><span class="n">10</span><span class="t">الإضافات المجانية (Free Add-ons)</span><span class="dots"></span><span class="p">12</span></li>
+      <li><span class="n">11</span><span class="t">الالتزام بكرّاسة الشروط</span><span class="dots"></span><span class="p">13</span></li>
+      <li><span class="n">12</span><span class="t">القدرة التشغيلية ونموذج التمويل الذاتي</span><span class="dots"></span><span class="p">14</span></li>
+      <li><span class="n">13</span><span class="t">الشروط والأحكام المالية</span><span class="dots"></span><span class="p">15</span></li>
+      <li><span class="n">14</span><span class="t">صلاحية العرض والتوقيع</span><span class="dots"></span><span class="p">16</span></li>
+    </ol>
+
+    <div class="note" style="margin-top:30px;">
+      هذه الوثيقة سرّية ومُعَدَّة حصرياً لشركة نايفر للابتكار في إطار طلب تقديم العروض لمشروع
+      <span class="latin">Super App_POI_Collect&nbsp;v2</span>. لا يُتداول مضمونها مع أي طرف ثالث دون موافقة كتابية مسبقة من المُورِّد.
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">02 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 1. EXECUTIVE SUMMARY =========================== -->
+<section class="page" data-screen-label="03 Executive Summary">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 01</div>
+    <h2 class="section-title">
+      <span class="sec-num">01</span>
+      الملخّص التنفيذي المالي
+    </h2>
+
+    <p class="lead">
+      يُقدَّم هذا العرض المالي استجابةً لطلب تقديم العروض الصادر عن شركة نايفر للابتكار لمشروع جمع بيانات نقاط الاهتمام
+      (<span class="latin">POI</span>) وفقاً لـ <span class="latin">Super App_POI_Collect&nbsp;v2 — SOW</span> وجدول الكميات المُحدَّث
+      (<span class="latin">BOQ&nbsp;v2</span>). يعتمد العرض على نموذج تسعير متدرّج محسوب على أساس اقتصاديات الحجم،
+      يعكس التكلفة الحقيقية للجودة المستدامة في كل بنود <span class="latin">BOQ</span>.
+    </p>
+
+    <div class="summary-hero">
+      <div>
+        <div class="label">TOTAL CONTRACT VALUE · شامل ضريبة القيمة المضافة</div>
+        <div class="amount">6,780,000<span class="ccy">SAR</span></div>
+        <div class="caption">إجمالي قبل الضريبة <span class="latin num">5,895,652</span> ريال · ضريبة القيمة المضافة <span class="latin num">15%</span></div>
+      </div>
+      <div class="right">
+        <div class="pts num">300,000</div>
+        <div class="pts-l">POINTS OF INTEREST · إجمالي مستهدف</div>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="l">CITIES · المدن</div>
+        <div class="v">3<span class="u">الرياض · جدة · الدمام</span></div>
+      </div>
+      <div class="kpi">
+        <div class="l">BOQ ITEMS · بنود التغطية</div>
+        <div class="v">3<span class="u">متعدّد المورّدين</span></div>
+      </div>
+      <div class="kpi">
+        <div class="l">UNIT PRICE · البنود الكبيرة</div>
+        <div class="v">22.00<span class="u">SAR / POI · شامل الضريبة</span></div>
+      </div>
+      <div class="kpi">
+        <div class="l">UNIT PRICE · البند الأصغر</div>
+        <div class="v">25.00<span class="u">SAR / POI · شامل الضريبة</span></div>
+      </div>
+    </div>
+
+    <h3>ملخّص الأرقام الرئيسية</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:55%;">البند</th>
+          <th class="num-h">القيمة</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>إجمالي نقاط الاهتمام المستهدفة (<span class="latin">BOQ</span> كامل)</td><td class="num">300,000 POI</td></tr>
+        <tr><td>المدن المستهدفة</td><td class="num">Riyadh · Jeddah · Dammam</td></tr>
+        <tr><td>بنود <span class="latin">BOQ</span></td><td class="num">3 — Multi-Vendor</td></tr>
+        <tr><td>مدّة المشروع (وفق <span class="latin">SOW&nbsp;v2</span>)</td><td class="num">حتى 31 Oct 2026</td></tr>
+        <tr><td>نموذج التسعير</td><td class="num">Tiered · Economies of Scale</td></tr>
+        <tr><td>سعر الوحدة — البنود 1 و 3 (<span class="latin">120,000 POI</span> لكل بند)</td><td class="num">22.00 SAR (شامل الضريبة)</td></tr>
+        <tr><td>سعر الوحدة — البند 2 (<span class="latin">60,000 POI</span>)</td><td class="num">25.00 SAR (شامل الضريبة)</td></tr>
+        <tr class="total"><td>الإجمالي قبل الضريبة</td><td class="num">5,895,652.17 SAR</td></tr>
+        <tr><td>ضريبة القيمة المضافة (<span class="latin">15%</span>)</td><td class="num">884,347.83 SAR</td></tr>
+        <tr class="grand"><td>الإجمالي شامل الضريبة</td><td class="num">6,780,000.00 SAR</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">03 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 2. EVALUATION =========================== -->
+<section class="page" data-screen-label="04 Evaluation">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 02</div>
+    <h2 class="section-title">
+      <span class="sec-num">02</span>
+      الاستجابة لمعايير التقييم المالي
+    </h2>
+
+    <p>
+      تُوجِز المصفوفة أدناه استجابة هذا العرض لمعايير التقييم المالي الأربعة المنصوص عليها في كرّاسة الشروط.
+    </p>
+
+    <div class="eval-grid">
+      <div class="eval-row">
+        <div class="e-n">01</div>
+        <div class="e-c">
+          <div class="lbl">تقييم التكلفة</div>
+          <div class="en">COST EVALUATION</div>
+        </div>
+        <div class="e-r">
+          تسعير متدرّج شفّاف يعكس التكلفة الحقيقية للجودة المستدامة.<br>
+          الإجمالي <strong class="latin num">5,895,652</strong> ريال قبل الضريبة (<span class="latin num">6,780,000</span> ريال شامل <span class="latin">VAT</span>).
+        </div>
+      </div>
+      <div class="eval-row">
+        <div class="e-n">02</div>
+        <div class="e-c">
+          <div class="lbl">شروط الدفع</div>
+          <div class="en">PAYMENT TERMS</div>
+        </div>
+        <div class="e-r">
+          <span class="latin num">60</span> يوماً من تاريخ تقديم فاتورة صحيحة (مطابق للكرّاسة). بلا دفعات مقدّمة، وفوترة بناءً على النقاط المقبولة.
+        </div>
+      </div>
+      <div class="eval-row">
+        <div class="e-n">03</div>
+        <div class="e-c">
+          <div class="lbl">الاستثناءات</div>
+          <div class="en">PRESENCE OF EXCEPTIONS</div>
+        </div>
+        <div class="e-r">
+          التزام كامل بـ <span class="latin">SOW&nbsp;v2</span> وكرّاسة الشروط دون أي تعديل أو تحفّظ.
+        </div>
+      </div>
+      <div class="eval-row">
+        <div class="e-n">04</div>
+        <div class="e-c">
+          <div class="lbl">الإضافات المجانية</div>
+          <div class="en">FREE ADD-ONS</div>
+        </div>
+        <div class="e-r">
+          ستّ إضافات مجانية شاملة في سعر الوحدة (تفصيلها في القسم <span class="latin">10</span>).
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>نقطة قوة جوهريّة:</strong>
+      التسعير الشفّاف المُقدَّم يعكس واقعيةً تشغيليةً وقدرةً على الاستدامة طوال مدّة المشروع، مع ضمان عدم الحاجة إلى تعديلات لاحقة بسبب نقص الموارد أو ضغط الهامش.
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">04 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 3. MULTI-VENDOR =========================== -->
+<section class="page" data-screen-label="05 Multi-vendor">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 03</div>
+    <h2 class="section-title">
+      <span class="sec-num">03</span>
+      الإقرار بطبيعة المشروع متعدّد المورّدين
+    </h2>
+
+    <p class="lead">
+      يُقرّ المورّد بطبيعة المشروع متعدّد المورّدين، ويلتزم بكافة الشروط ذات الصلة في كرّاسة الشروط ونطاق العمل.
+    </p>
+
+    <ol class="num-list">
+      <li>المشروع يُنفَّذ بنظام اختيار مورّدين متعدّدين.</li>
+      <li>الكميات المذكورة في <span class="latin">BOQ</span> تمثّل الحجم الإجمالي لكل منطقة تغطية ولا تُسنَد بالكامل لأي مورّد منفرد.</li>
+      <li>التوزيع النهائي للكميات بين المورّدين المُختارين سيُحدَّد بعد التقييم الفني وفق درجاته.</li>
+      <li>البنود والكميات ومناطق التغطية قابلة للتعديل، ونلتزم بأي تعديلات تُبلَّغ كتابياً قبل الترسية.</li>
+      <li>التوزيع سيكون على مستوى الحي كما تشترط الكرّاسة.</li>
+      <li>أسعار الوحدة المُقدَّمة شاملة لكل التكاليف (الجمع، ضمان الجودة، التنسيق، التسليم).</li>
+    </ol>
+
+    <div class="note">
+      <strong>ملاحظة:</strong> الفاتورة النهائية تُحتسَب بمعادلة بسيطة وثابتة لكل بند:
+      <em>سعر الوحدة المعتمد للبند × الكمية المُسنَدَة فعلياً ضمنه</em>.
+      يحتفظ كل بند بسعره الموحَّد بغضّ النظر عن نسبة الترسية.
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">05 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 4. BOQ =========================== -->
+<section class="page" data-screen-label="06 BOQ">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 04</div>
+    <h2 class="section-title">
+      <span class="sec-num">04</span>
+      جدول الكميات والأسعار <span class="latin" style="font-size:.75em; color:var(--muted); font-weight:500;">BOQ v2 · Tiered Pricing</span>
+    </h2>
+
+    <p>
+      نُقدِّم الأسعار التالية وفق نموذج تسعير متدرّج يعكس اقتصاديات الحجم لكل بند من بنود <span class="latin">BOQ</span>:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:34px;">#</th>
+          <th>منطقة التغطية</th>
+          <th class="num-h" style="width:90px;">الكمية</th>
+          <th class="center" style="width:60px;">الوحدة</th>
+          <th class="num-h" style="width:90px;">سعر الوحدة (شامل ضريبة)</th>
+          <th class="num-h" style="width:130px;">الإجمالي (ريال)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="center num"><strong>1</strong></td>
+          <td>الرياض + جدّة<br><span style="color:var(--muted); font-size:9pt;">بند كبير — اقتصاد حجم أفضل</span></td>
+          <td class="num">120,000</td>
+          <td class="center">POI</td>
+          <td class="num">22.00</td>
+          <td class="num"><strong>2,640,000.00</strong></td>
+        </tr>
+        <tr>
+          <td class="center num"><strong>2</strong></td>
+          <td>الرياض + الدمام<br><span style="color:var(--muted); font-size:9pt;">بند أصغر — تكاليف ثابتة موزَّعة على كمية أقل</span></td>
+          <td class="num">60,000</td>
+          <td class="center">POI</td>
+          <td class="num">25.00</td>
+          <td class="num"><strong>1,500,000.00</strong></td>
+        </tr>
+        <tr>
+          <td class="center num"><strong>3</strong></td>
+          <td>الرياض + جدّة + الدمام<br><span style="color:var(--muted); font-size:9pt;">بند كبير — اقتصاد حجم أفضل</span></td>
+          <td class="num">120,000</td>
+          <td class="center">POI</td>
+          <td class="num">22.00</td>
+          <td class="num"><strong>2,640,000.00</strong></td>
+        </tr>
+        <tr class="total">
+          <td colspan="2">الإجمالي قبل الضريبة</td>
+          <td class="num">300,000</td>
+          <td class="center">POI</td>
+          <td>—</td>
+          <td class="num">5,895,652.17</td>
+        </tr>
+        <tr>
+          <td colspan="5">ضريبة القيمة المضافة (<span class="latin">15%</span>)</td>
+          <td class="num">884,347.83</td>
+        </tr>
+        <tr class="grand">
+          <td colspan="5">الإجمالي شامل الضريبة</td>
+          <td class="num">6,780,000.00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      <strong>ملاحظة:</strong> الإجمالي يُحتسَب على فرض ترسية الكميات الكاملة للبنود الثلاثة.
+      الفاتورة النهائية تُحسَب بـ (سعر الوحدة المعتمد لكل بند × الكمية المُسنَدَة فعلياً ضمنه).
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">06 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 5. METHODOLOGY =========================== -->
+<section class="page" data-screen-label="07 Methodology">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 05</div>
+    <h2 class="section-title">
+      <span class="sec-num">05</span>
+      منهجية التسعير
+    </h2>
+
+    <p class="lead">
+      بُني التسعير وفق نموذج متدرّج محسوب على أساس اقتصاديات الحجم
+      (<span class="latin">Economies of Scale</span>)، يربط كل بندٍ ماليٍّ بمخرَجٍ تشغيليٍّ محدّد في خطة المشروع.
+    </p>
+
+    <h3>المنطق الاقتصادي للتسعير المتدرّج</h3>
+    <p>
+      يشمل المشروع مكوّنات تكلفة ثابتة لا تتأثّر بحجم الكمية المُسنَدَة، إلى جانب تكاليف متغيّرة تتناسب طردياً مع حجم الكمية.
+      وعند توزيع المكوّنات الثابتة على كميةٍ أكبر تنخفض حصّتها من سعر الوحدة، والعكس صحيح:
+    </p>
+
+    <div class="method-cards">
+      <div class="method-card">
+        <div class="h">البنود الكبيرة — البندان 1 و 3</div>
+        <div class="v">22.00<span class="u">SAR / POI · شامل ضريبة</span></div>
+        <div class="d">عند <span class="latin num">120,000</span> POI لكل بند — توزّع التكاليف الثابتة على كميةٍ أكبر فينخفض نصيب الوحدة منها.</div>
+      </div>
+      <div class="method-card">
+        <div class="h">البند الأصغر — البند 2</div>
+        <div class="v">25.00<span class="u">SAR / POI · شامل ضريبة</span></div>
+        <div class="d">عند <span class="latin num">60,000</span> POI — تتحمّل الوحدة حصّةً أعلى من نفس التكاليف الثابتة بسبب صغر الحجم.</div>
+      </div>
+    </div>
+
+    <h3>أُسس التسعير</h3>
+    <ul>
+      <li>التسعير مبني على معدّل إنتاجية <span class="latin num">50</span> نقطة/يوم لكل مسّاحٍ ميدانيٍّ في المناطق الكثيفة (متوسط مرجَّح <span class="latin">~42</span> POI/يوم عبر المدن).</li>
+      <li><span class="latin num">22</span> يوم عمل فعلي شهرياً بعد استثناء الإجازات والعطل الرسمية.</li>
+      <li>فريق عمل بقدرةٍ تشغيليةٍ كاملة موزَّع على <span class="latin">3</span> مدن، قابل للتمدّد حسب الكمية المُسنَدَة.</li>
+      <li>الأسعار ثابتة طوال مدّة المشروع ولا تخضع للتعديل.</li>
+      <li>كل بند يحتفظ بسعره الموحَّد بغضّ النظر عن الكمية المُسنَدَة ضمنه (المُسنَد جزئياً يبقى بنفس سعر البند).</li>
+      <li>التسعير يعكس <span class="latin">Total Cost of Ownership</span> بشكلٍ واقعيٍّ ومستدام.</li>
+    </ul>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">07 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 6. TOTAL STRUCTURE =========================== -->
+<section class="page" data-screen-label="08 Cost Structure">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 06</div>
+    <h2 class="section-title">
+      <span class="sec-num">06</span>
+      هيكل التكلفة الإجمالية
+    </h2>
+
+    <p>
+      يشمل سعر الوحدة المُقدَّم في القسم <span class="latin">4</span> جميع التكاليف المباشرة وغير المباشرة المطلوبة لتقديم الخدمة بمستوى الجودة المتّفق عليه،
+      بما يضمن استدامة العمليات طوال فترة المشروع.
+    </p>
+
+    <h3>ملخّص القيمة الإجمالية</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:60%;">البند</th>
+          <th class="num-h">المبلغ (ريال)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>الإجمالي قبل الضريبة</td><td class="num">5,895,652.17</td></tr>
+        <tr><td>ضريبة القيمة المضافة (<span class="latin">15%</span>)</td><td class="num">884,347.83</td></tr>
+        <tr class="grand"><td>الإجمالي شامل الضريبة</td><td class="num">6,780,000.00</td></tr>
+      </tbody>
+    </table>
+
+    <h3>التزام الشموليّة</h3>
+    <p>
+      يغطّي السعر المُقدَّم كامل دورة جمع البيانات، وضمان الجودة، والتنسيق، والتسليم، والإدارة، والتشغيل اليومي،
+      دون أي بنود إضافية أو رسوم خفيّة.
+    </p>
+
+    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr); margin-top:18px;">
+      <div class="kpi">
+        <div class="l">DIRECT COSTS</div>
+        <div class="v">Field<span class="u">جمع · تحقّق · مراجعة</span></div>
+      </div>
+      <div class="kpi">
+        <div class="l">INDIRECT COSTS</div>
+        <div class="v">PMO<span class="u">إدارة · أدوات · بنية تحتية</span></div>
+      </div>
+      <div class="kpi">
+        <div class="l">COMPLIANCE</div>
+        <div class="v">Full<span class="u">ZATCA · GOSI · PDPL · NCA</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">08 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 7. COST BY CITY =========================== -->
+<section class="page" data-screen-label="09 City Cost">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 07</div>
+    <h2 class="section-title">
+      <span class="sec-num">07</span>
+      التكلفة حسب المدينة
+    </h2>
+
+    <p>
+      يتمّ توزيع التكاليف على المدن الثلاث بناءً على عدد نقاط الاهتمام المستهدفة والمتوسط المرجَّح لأسعار البنود
+      (افتراض الإسناد الكامل):
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>المدينة</th>
+          <th class="num-h">عدد POI</th>
+          <th class="num-h">النسبة</th>
+          <th class="num-h">المتوسط المرجَّح (شامل ضريبة)</th>
+          <th class="num-h">قبل الضريبة</th>
+          <th class="num-h">شامل الضريبة</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>الرياض</td><td class="num">150,000</td><td class="num">50%</td><td class="num">22.60</td><td class="num">2,947,826</td><td class="num">3,390,000</td></tr>
+        <tr><td>جدّة</td><td class="num">90,000</td><td class="num">30%</td><td class="num">22.60</td><td class="num">1,768,696</td><td class="num">2,034,000</td></tr>
+        <tr><td>الدمام</td><td class="num">60,000</td><td class="num">20%</td><td class="num">22.60</td><td class="num">1,179,130</td><td class="num">1,356,000</td></tr>
+        <tr class="grand">
+          <td>الإجمالي</td>
+          <td class="num">300,000</td>
+          <td class="num">100%</td>
+          <td class="num">22.60</td>
+          <td class="num">5,895,652</td>
+          <td class="num">6,780,000</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cmp">
+      <div class="cmp-row">
+        <div class="lbl">الرياض</div>
+        <div class="bar"><div class="fill" style="width:50%;"></div></div>
+        <div class="val">50%</div>
+      </div>
+      <div class="cmp-row">
+        <div class="lbl">جدّة</div>
+        <div class="bar"><div class="fill" style="width:30%;"></div></div>
+        <div class="val">30%</div>
+      </div>
+      <div class="cmp-row">
+        <div class="lbl">الدمام</div>
+        <div class="bar"><div class="fill gold" style="width:20%;"></div></div>
+        <div class="val">20%</div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>ملاحظة منهجيّة:</strong>
+      التوزيع المديني أعلاه تقديري ومبني على افتراض اقتسام كميات كل بندٍ بالتساوي بين المدن المشمولة فيه،
+      وذلك لأغراض إيضاح التوزيع الجغرافي للتكلفة فقط. المتوسط المرجَّح <span class="latin num">22.60</span> ريال (شامل الضريبة)
+      يعكس الناتج المركَّب من خلط بنود الـ <span class="latin num">22.00</span> ريال
+      (<span class="latin num">240,000</span> POI) وبند الـ <span class="latin num">25.00</span> ريال
+      (<span class="latin num">60,000</span> POI) على إجمالي <span class="latin num">300,000</span> POI.
+      التسعير الفعلي والفوترة يتمّان على مستوى البند لا المدينة.
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">09 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 8. PAYMENTS =========================== -->
+<section class="page" data-screen-label="10 Payment Schedule">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 08</div>
+    <h2 class="section-title">
+      <span class="sec-num">08</span>
+      جدول الدفعات
+    </h2>
+
+    <p>
+      <strong>لا توجد دفعة مقدّمة.</strong>
+      تتمّ المدفوعات بناءً على دفعات النقاط المُسلَّمة والمعتمَدة، وفقاً لشروط الدفع في الكرّاسة (<span class="latin num">60</span> يوماً من الفاتورة الصحيحة).
+      المبالغ أدناه محسوبة على سعر البنود الكبيرة (<span class="latin num">22.00</span> ريال شامل الضريبة) كمثالٍ توضيحيٍّ.
+    </p>
+
+    <h3>منهجية تصميم الدفعات</h3>
+    <ul>
+      <li>اعتمدنا دفعات أصغر (<span class="latin num">5,000</span> POI) لأول ثلاث دفعات لإتاحة دورة تحقّق ومراجعة مبكرة مع فريق نايفر على عيّناتٍ أصغر، بما يضمن المعايرة على معدّل القبول <span class="latin num">90%</span> قبل التوسّع في الكميات.</li>
+      <li>تسريع دورة التدفّق النقدي في مرحلة التشغيل الأولى، بما يعزّز استقرار العمليات الميدانية دون الاعتماد على دفعاتٍ مقدّمة.</li>
+      <li>الانتقال إلى دفعات <span class="latin num">10,000</span> POI بعد التحقّق من استقرار الجودة والإيقاع التشغيلي، مما يقلّل العبء الإداري على نايفر في الفوترة والمراجعة.</li>
+    </ul>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:60px;">الدفعة</th>
+          <th>الشرط</th>
+          <th class="num-h">المبلغ (ريال)</th>
+          <th>شروط الدفع</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="center num"><strong>1</strong></td><td>أول <span class="latin num">5,000</span> POI مُسلَّمة ومقبولة</td><td class="num">110,000</td><td>60 يوماً من الفاتورة الصحيحة</td></tr>
+        <tr><td class="center num"><strong>2</strong></td><td><span class="latin num">5,000</span> POI التالية مُسلَّمة ومقبولة</td><td class="num">110,000</td><td>60 يوماً من الفاتورة الصحيحة</td></tr>
+        <tr><td class="center num"><strong>3</strong></td><td><span class="latin num">5,000</span> POI التالية مُسلَّمة ومقبولة</td><td class="num">110,000</td><td>60 يوماً من الفاتورة الصحيحة</td></tr>
+        <tr><td class="center num"><strong>4+</strong></td><td>كل <span class="latin num">10,000</span> POI مُسلَّمة ومقبولة</td><td class="num">220,000 / دفعة</td><td>60 يوماً من الفاتورة الصحيحة</td></tr>
+        <tr><td class="center">الأخيرة</td><td>النقاط المتبقّية للوصول إلى الكمية المُسنَدَة</td><td class="num">بحسب الحجم</td><td>60 يوماً من الفاتورة الصحيحة</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      في حال إسناد البند <span class="latin num">2</span> (<span class="latin">R+D, 60K POI</span>)،
+      تُحسَب كل دفعة بسعر <span class="latin num">25.00</span> ريال/POI شامل الضريبة
+      (مثلاً: <span class="latin num">5,000</span> POI = <span class="latin num">125,000</span> ريال،
+      <span class="latin num">10,000</span> POI = <span class="latin num">250,000</span> ريال).
+    </div>
+
+    <h3>قواعد قبول الدفعات والفوترة</h3>
+    <ul>
+      <li>يجب أن تحقّق دفعة <span class="latin">POI</span> المكتملة الحد الأدنى المطلوب <span class="latin num">90%</span> (<span class="latin">Minimum 90%</span>) لمعدّل القبول لتفعيل الفوترة، وفقاً لـ <span class="latin">SLA</span> الكرّاسة.</li>
+      <li>دورة إعادة جمعٍ واحدةٍ لكل نقطة مرفوضة مشمولة. الدورات الإضافية تخضع للاتفاق المتبادل.</li>
+      <li>يتمّ تأكيد النقاط المقبولة عبر سير عمل القبول في أداة نايفر قبل إصدار الفاتورة.</li>
+      <li>الدفعات الجزئية في نهاية المشروع تُفوتَر بناءً على عدد النقاط المقبولة فعلياً.</li>
+      <li>فاتورة إلكترونية معتمدة <span class="latin">ZATCA Phase 2</span> لكل دفعة.</li>
+    </ul>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">10 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 9. COMPARISON =========================== -->
+<section class="page" data-screen-label="11 Price Comparison">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 09</div>
+    <h2 class="section-title">
+      <span class="sec-num">09</span>
+      مقارنة الأسعار بين البنود
+    </h2>
+
+    <p>
+      الفرق بين سعر البنود الكبيرة وسعر البند الأصغر ينعكس مباشرةً من منطق اقتصاديات الحجم المُوضَّح في القسم <span class="latin">5</span>،
+      وهو فرقٌ متوقَّعٌ ومبرَّرٌ اقتصادياً في نماذج التسعير المعتمدة لمشاريع جمع البيانات الميدانية.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>البند</th>
+          <th class="num-h">الكمية</th>
+          <th class="num-h">سعر الوحدة قبل الضريبة</th>
+          <th class="num-h">سعر الوحدة شامل الضريبة</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>البنود الكبيرة (<span class="latin num">1</span> و <span class="latin num">3</span>)</td><td class="num">120,000 POI / بند</td><td class="num">19.13</td><td class="num">22.00</td></tr>
+        <tr><td>البند الأصغر (<span class="latin num">2</span>)</td><td class="num">60,000 POI</td><td class="num">21.74</td><td class="num">25.00</td></tr>
+      </tbody>
+    </table>
+
+    <div class="cmp" style="margin-top:18px;">
+      <div class="cmp-row">
+        <div class="lbl">البنود الكبيرة — 22.00 SAR (شامل الضريبة)</div>
+        <div class="bar"><div class="fill" style="width:88%;"></div></div>
+        <div class="val">22.00</div>
+      </div>
+      <div class="cmp-row">
+        <div class="lbl">البند الأصغر — 25.00 SAR (شامل الضريبة)</div>
+        <div class="bar"><div class="fill gold" style="width:100%;"></div></div>
+        <div class="val">25.00</div>
+      </div>
+    </div>
+
+    <h3>ما يشمله سعر الوحدة (موحَّد لكل البنود)</h3>
+    <ul>
+      <li>جمع البيانات — جميع الحقول الإلزامية والإضافية متى توفّرت.</li>
+      <li>ضمان الجودة — نموذج متعدّد الطبقات.</li>
+      <li>تنسيق البيانات وتسليمها على مستوى الحي.</li>
+      <li>التسليم عبر أدوات نايفر.</li>
+      <li>دورة إعادة جمعٍ واحدةٍ للنقاط المرفوضة (مشمولة).</li>
+      <li>جميع الالتزامات الضريبية والنظامية (<span class="latin">ZATCA · GOSI · PDPL · NCA</span>).</li>
+      <li>كل التكاليف الإدارية والتشغيلية والتأمينية اللازمة لتنفيذ البند.</li>
+    </ul>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">11 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 10. ADD-ONS =========================== -->
+<section class="page" data-screen-label="12 Add-ons">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 10</div>
+    <h2 class="section-title">
+      <span class="sec-num">10</span>
+      الإضافات المجانية <span class="latin" style="font-size:.75em; color:var(--muted); font-weight:500;">Free Add-ons</span>
+    </h2>
+
+    <p>
+      نُقدّم الإضافات التالية مجاناً خارج نطاق العمل المُحدَّد في <span class="latin">BOQ</span>، دعماً لشراكتنا مع نايفر:
+    </p>
+
+    <div class="addons">
+      <div class="addon">
+        <div class="n">01</div>
+        <div class="b">لوحة تحكّم لحظيّة لمتابعة تقدّم التسليم وحالة النقاط على مدار <span class="latin num">24/7</span> — دون أي رسوم تقنية.</div>
+      </div>
+      <div class="addon">
+        <div class="n">02</div>
+        <div class="b">تقارير المحتوى المحلي ربع السنوية لدعم إفصاحات نايفر التنظيمية.</div>
+      </div>
+      <div class="addon">
+        <div class="n">03</div>
+        <div class="b">دورة إعادة جمعٍ كاملة للنقاط المرفوضة بأي رمز رفض — مشمولة بسعر الوحدة دون تكلفة إضافية.</div>
+      </div>
+      <div class="addon">
+        <div class="n">04</div>
+        <div class="b">اجتماعات حوكمية دورية (أسبوعية وشهرية) ومجلس توجيهي ربع سنوي مع نايفر.</div>
+      </div>
+      <div class="addon">
+        <div class="n">05</div>
+        <div class="b">تكامل تسليم متعدّد الصيغ (<span class="latin">JSON / CSV / GeoJSON</span>) دون أي رسوم.</div>
+      </div>
+      <div class="addon">
+        <div class="n">06</div>
+        <div class="b">زيارات تدقيقٍ مشتركة مع فريق نايفر حتى مرّتين شهرياً — دون تكلفة.</div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:20px;">
+      جميع الإضافات أعلاه مُقدَّمة بدون أي تكلفة إضافية على نايفر، وشاملةٌ بسعر الوحدة المعتمد لكل بند.
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">12 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 11. COMPLIANCE =========================== -->
+<section class="page" data-screen-label="13 Compliance">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 11</div>
+    <h2 class="section-title">
+      <span class="sec-num">11</span>
+      الالتزام بكرّاسة الشروط
+    </h2>
+
+    <p class="lead">
+      نُقدّم هذا العرض بالتزامٍ كاملٍ بمتطلّبات نطاق العمل وكرّاسة الشروط، دون إجراء أي تعديل على وثائق طلب العروض أو ملاحقها،
+      وبما يتطابق مع المواصفات المعتمدة وجدول الكميات (<span class="latin">BOQ v2</span>).
+    </p>
+
+    <h3>إقرارات الالتزام</h3>
+    <ol class="num-list">
+      <li>مطابقة كاملة لجميع متطلّبات <span class="latin">Super App_POI_Collect v2 — SOW</span>.</li>
+      <li>التزام كامل بهيكل فريق المسح المنصوص عليه في <span class="latin">SOW v2</span> (<span class="latin">Field Surveyor · Office Researcher · Data Validator</span>). توفّر مؤسسة فِرَق التقنية فِرَقاً ميدانية ومكتبية وتحقّقٍ متخصّصة قابلة للتمدّد حسب الكميات المُسنَدَة.</li>
+      <li>التزام كامل باستخدام أدوات نايفر للجمع والتحقّق حصرياً.</li>
+      <li>التزام كامل بـ <span class="latin">SLA</span>: دقة بيانات بحدٍّ أدنى <span class="latin num">90%</span> (<span class="latin">Minimum 90%</span>) وتغطية بحدٍّ أدنى <span class="latin num">98%</span> (<span class="latin">Minimum 98%</span>) ضمن مناطق المسح.</li>
+      <li>جاهزية تشغيلية فورية خلال <span class="latin num">14</span> يوم عملٍ من تاريخ الترسية، مع الالتزام التامّ بتاريخ التسليم النهائي <span class="latin num">31 Oct 2026</span>.</li>
+      <li>التزام كامل بالتسليم على مستوى الحيّ.</li>
+      <li>عدم تضمين أي معلوماتٍ ماليةٍ في العرض الفنّي (التزام صريح ببند الفصل في الكرّاسة).</li>
+    </ol>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">13 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 12. CAPACITY =========================== -->
+<section class="page" data-screen-label="14 Capacity">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 12</div>
+    <h2 class="section-title">
+      <span class="sec-num">12</span>
+      القدرة التشغيلية ونموذج التمويل الذاتي
+    </h2>
+
+    <h3>12.1 &nbsp; القدرة التشغيلية القابلة للتمدّد</h3>
+    <p>
+      تحافظ مؤسسة فِرَق التقنية على قدرةٍ تشغيليةٍ قابلةٍ للتمدّد السريع تُمكِّن من توسيع التغطية على مستوى الأحياء
+      دون أي أثرٍ على مستويات <span class="latin">SLA</span> أو جودة التسليم:
+    </p>
+    <ul>
+      <li><strong>نموذج تشغيلي معياري:</strong> كل وحدةٍ تشغيليةٍ تُضاف بشكلٍ مستقلٍّ لاستيعاب كميات إضافية بكفاءة.</li>
+      <li><strong>قاعدة كوادر احتياطية مؤهَّلة:</strong> قائمة جاهزة من المسّاحين والمدقّقين المدرَّبين للاستدعاء عند توسّع الإسناد.</li>
+      <li><strong>زمن استجابة للتوسّع:</strong> التشغيل الكامل لأي توسّعٍ إضافيٍّ ضمن <span class="latin num">21</span> يوم عملٍ من الإسناد التكميلي.</li>
+      <li><strong>شريك تشغيل استراتيجي مع نايفر</strong> — شراكة طويلة الأمد قابلة للتطوّر مع نمو متطلّبات منصّة <span class="latin">Super App</span>.</li>
+      <li><strong>حوكمة <span class="latin">PMO</span> مركزية</strong> تضمن وحدة معايير <span class="latin">SLA</span> والاتساق التشغيلي عبر جميع الأحياء.</li>
+    </ul>
+
+    <h3>12.2 &nbsp; نموذج التمويل الذاتي</h3>
+    <p>
+      تمتلك مؤسسة فِرَق التقنية القدرة المالية الكاملة لتمويل المرحلة التشغيلية الأولى من رأسمالها الخاص،
+      دون الحاجة لدفعاتٍ مقدّمةٍ من نايفر. وهذا يضمن استمرارية العمليات منذ اليوم الأول للترسية،
+      مع الالتزام التامّ بشروط الدفع المحدّدة في الكرّاسة (<span class="latin num">60</span> يوماً من الفاتورة الصحيحة).
+    </p>
+    <ul>
+      <li>تمويل ذاتي للمرحلة التشغيلية الأولى (أول <span class="latin num">4</span> أشهر) من رأس المال الخاص للمؤسسة.</li>
+      <li>لا توجد مطالبة بدفعاتٍ مقدّمة (<span class="latin">Advance Payment</span>) — إقرار صريح في القسم <span class="latin">8</span>.</li>
+      <li>نموذج تدفّقٍ نقديٍّ مستقرٍّ يستوعب دورة الدفع <span class="latin num">60</span> يوماً دون أي ضغطٍ على التشغيل.</li>
+      <li>ضمانات بنكية وتأمينات جاهزة لدعم متطلّبات العقد عند الترسية.</li>
+    </ul>
+
+    <h3>12.3 &nbsp; إدارة المخاطر التشغيلية</h3>
+    <ul>
+      <li>فِرَق مساحة احتياطية بنسبة تغطية <span class="latin num">15%</span> فوق الفريق المُسنَد لأي بند.</li>
+      <li>جاهزية استبدال الكوادر — قائمة موارد جاهزة لاستبدال أي موظفٍ خلال <span class="latin num">5</span> أيام عمل.</li>
+      <li>عملية تصعيدٍ سريعة: الاستجابة لأي مشكلةٍ تشغيليةٍ أو حادثة سلامةٍ خلال <span class="latin num">24</span> ساعة عبر <span class="latin num">5</span> مستويات تصعيدٍ موثَّقة.</li>
+      <li>خطة استمرارية أعمالٍ مخصَّصة لظروف الموجات الحرارية أو الأعطال التقنية.</li>
+      <li>تأمين شاملٌ يغطّي الإصابات المهنية والمسؤولية المهنية لكامل فترة المشروع.</li>
+    </ul>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">14 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 13. T&C =========================== -->
+<section class="page" data-screen-label="15 Terms">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 13</div>
+    <h2 class="section-title">
+      <span class="sec-num">13</span>
+      الشروط والأحكام المالية
+    </h2>
+
+    <ol class="num-list">
+      <li>جميع الأسعار مقدَّمة بالريال السعودي (<span class="latin">SAR</span>) وثابتة طوال مدّة المشروع.</li>
+      <li>ضريبة القيمة المضافة <span class="latin num">15%</span> مضافة على جميع المبالغ المعروضة.</li>
+      <li>شروط الدفع: <span class="latin num">60</span> يوماً من استلام الفاتورة الصحيحة (مطابق للكرّاسة).</li>
+      <li>سعر الوحدة لكل بند يشمل جميع الخدمات المحدّدة في نطاق العمل (<span class="latin">Data Collection · QA · Formatting · Delivery</span>).</li>
+      <li>تُدار أي تعديلاتٍ أو طلبات تغييرٍ بعد الترسية وفقاً لإجراءات التغيير الرسمية المكتوبة والموافقات المعتمَدة في العقد، دون أي تعديلٍ أحاديٍّ على أسعار الوحدة أو شروط الدفع المعتمدة.</li>
+      <li>يلتزم المقاول بجميع الالتزامات الضريبية والتأمينية والتنظيمية وفقاً للأنظمة السعودية.</li>
+      <li>يتحمّل المقاول مسؤولية جميع تكاليف الموظفين والمصاريف التشغيلية.</li>
+      <li>فوترة إلكترونية معتمدة <span class="latin">ZATCA Phase 2</span> لكل دفعة.</li>
+      <li>لا توجد دفعات مقدّمة مطلوبة — الفوترة بناءً على النقاط المقبولة فعلياً.</li>
+      <li>نموذج <span class="latin">Multi-Vendor</span>: التسعير المتدرّج يعكس اقتصاديات الحجم لكل بند، وكل بند يحتفظ بسعره الموحَّد بغضّ النظر عن الكمية المُسنَدَة ضمنه.</li>
+      <li><span class="latin">Total Cost of Ownership</span>: التسعير المُقدَّم يعكس التكلفة الحقيقية للجودة المستدامة طوال مدّة المشروع، ويضمن عدم الحاجة لتعديلاتٍ لاحقةٍ بسبب نقص الموارد أو تدهور مستوى الخدمة.</li>
+    </ol>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">15 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== 14. SIGNATURE =========================== -->
+<section class="page" data-screen-label="16 Signature">
+  <div class="page-header">
+    <div class="brand">العرض المالي — مؤسسة فِرَق التقنية</div>
+    <div class="doc-id">FP-NIC-POI-2026-001-R4</div>
+  </div>
+  <div class="page-body">
+    <div class="eyebrow">SECTION 14</div>
+    <h2 class="section-title">
+      <span class="sec-num">14</span>
+      صلاحية العرض والتوقيع
+    </h2>
+
+    <p class="lead">
+      هذا العرض المالي صالحٌ لمدّة <strong><span class="latin num">90</span> يوماً</strong> من تاريخ فتح العروض المالية.
+    </p>
+
+    <div class="sig-block">
+      <div class="grid">
+        <div class="field">
+          <div class="l">NAME · الاسم</div>
+          <div class="v">عبدالرحمن النقيدان</div>
+        </div>
+        <div class="field">
+          <div class="l">TITLE · المسمى الوظيفي</div>
+          <div class="v">مالك المؤسسة والممثّل النظامي</div>
+        </div>
+        <div class="field">
+          <div class="l">COMMERCIAL REG. · السجل التجاري</div>
+          <div class="v num">7052132144</div>
+        </div>
+        <div class="field">
+          <div class="l">REFERENCE · المرجع</div>
+          <div class="v num">FP-NIC-POI-2026-001-R4</div>
+        </div>
+        <div class="field">
+          <div class="l">DATE · التاريخ</div>
+          <div class="v num">14 May 2026</div>
+        </div>
+        <div class="field">
+          <div class="l">VALIDITY · صلاحية العرض</div>
+          <div class="v num">90 days · تسعون يوماً</div>
+        </div>
+      </div>
+
+      <div class="sig-line">
+        <div class="slot">
+          <div class="line"></div>
+          <div class="lbl">التوقيع · Signature</div>
+        </div>
+        <div class="slot">
+          <div class="line"></div>
+          <div class="lbl">الختم · Official Seal</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:30px; text-align:center;">
+      سرّي وخاص — لا يُتداول إلا مع شركة نايفر للابتكار · <span class="latin">STRICTLY CONFIDENTIAL — Naver Innovation Co. only</span>
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="confidential">
+</div>
+    <div class="pageno">16 / 17</div>
+  </div>
+</section>
+
+<!-- =========================== BACK COVER =========================== -->
+<section class="page cover" data-screen-label="17 Back">
+  <div class="cover-watermark"></div>
+  <div class="cover-grid">
+    <div class="cover-top">
+      <div class="cover-mark">
+        <span class="dot"></span>
+        <div>
+          <div class="name">FT — FIRAQ AL TIQNIA</div>
+          <div class="sub">مؤسسة فِرَق التقنية</div>
+        </div>
+      </div>
+      <div class="cover-ref">END OF DOCUMENT<br>FP-NIC-POI-2026-001-R4</div>
+    </div>
+
+    <div class="cover-center" style="text-align:center; padding:60mm 0;">
+      <div class="cover-eyebrow" style="margin-bottom:24px;">THANK YOU · شكراً</div>
+      <div style="color:rgba(255,255,255,.85); font-size:18pt; line-height:1.7; max-width:140mm; margin:0 auto;">
+        نتطلّع إلى شراكةٍ طويلة الأمد مع شركة نايفر للابتكار
+        في تمكين منصّة <span class="latin" style="color:#fff;">Super App</span>
+        ببياناتٍ ميدانيةٍ موثوقة ومستدامة.
+      </div>
+      <div class="cover-divider" style="margin:40px auto;"></div>
+      <div style="color:rgba(255,255,255,.55); font-size:10pt; direction:ltr; font-family:'IBM Plex Sans';">
+        Issued · 14 May 2026 &nbsp;·&nbsp; Validity · 90 days &nbsp;·&nbsp; SAR 6,780,000 incl. VAT
+      </div>
+    </div>
+
+    <div class="cover-bottom">
+      <div class="conf">
+</div>
+      <div>17 / 17</div>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.fonts.ready.then(function() {
+    setTimeout(function() { window.print(); }, 600);
+  });
+</script>
+</body>
+</html>
